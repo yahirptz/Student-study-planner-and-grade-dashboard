@@ -24,7 +24,7 @@ function renderStats() {
   const open = data.assignments.filter((item) => item.status !== "done").length;
   const done = data.assignments.filter((item) => item.status === "done").length;
   const completion = data.assignments.length ? Math.round(done / data.assignments.length * 100) : 0;
-  const grades = data.courses.map((course) => Number(course.grade)).filter((grade) => Number.isFinite(grade));
+  const grades = data.courses.filter((course) => course.grade !== null && course.grade !== undefined && String(course.grade).trim() !== "").map((course) => Number(course.grade)).filter((grade) => Number.isFinite(grade));
   $("#courseCount").textContent = data.courses.length;
   $("#openCount").textContent = open;
   $("#openDetail").textContent = open === 1 ? "needs your attention" : "waiting to be planned";
