@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A focused student study planner and grade dashboard.">
+  <title>Studyboard | Student Study Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Studyboard home">
+        <span class="brand-mark">S</span>
+        <span>studyboard<span class="brand-dot">.</span></span>
+      </a>
+      <div class="version-control" aria-label="Choose app version">
+        <span class="version-label">Build</span>
+        <button class="version-button active" data-version="1" type="button">01 / Basic</button>
+        <button class="version-button" data-version="2" type="button">02 / Enhanced</button>
+      </div>
+      <div class="header-date"><span class="status-dot"></span><span id="todayLabel">Today</span></div>
+    </header>
+
+    <main>
+      <section class="intro-grid">
+        <div>
+          <p class="eyebrow">Student workspace <span id="versionCaption">/ version 1</span></p>
+          <h1>Make room for<br><em>good work.</em></h1>
+        </div>
+        <div class="intro-note">
+          <p>Keep your courses clear, your next deadline close, and your progress visible.</p>
+          <span class="mono">LOCAL DATA / AUTOSAVED</span>
+        </div>
+      </section>
+
+      <section class="stats-row" aria-label="Study overview">
+        <article class="stat-card accent-card"><span class="stat-label">Active courses</span><strong id="courseCount">0</strong><span class="stat-detail">this semester</span></article>
+        <article class="stat-card"><span class="stat-label">Open assignments</span><strong id="openCount">0</strong><span class="stat-detail" id="openDetail">waiting to be planned</span></article>
+        <article class="stat-card"><span class="stat-label">Average grade</span><strong id="averageGrade">--</strong><span class="stat-detail">across graded courses</span></article>
+        <article class="stat-card progress-card"><div class="stat-top"><span class="stat-label">Completion</span><strong id="completionPercent">0%</strong></div><div class="progress-track"><span id="completionBar"></span></div><span class="stat-detail">assignment progress</span></article>
+      </section>
+
+      <section class="enhanced-strip" id="enhancedStrip" hidden>
+        <div class="focus-message"><span class="focus-kicker">ENHANCED FOCUS</span><strong id="focusMessage">Add an assignment to see your next focus.</strong></div>
+        <div class="session-counter"><span class="stat-label">Study sessions</span><strong id="sessionCount">0</strong><button class="text-button" id="addSessionButton" type="button">+ Log session</button></div>
+        <div class="week-meter"><span class="stat-label">Weekly target</span><div class="week-dots" id="weekDots" aria-label="Weekly study sessions"></div></div>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="panel courses-panel">
+          <div class="panel-heading"><div><p class="eyebrow">01 / Curriculum</p><h2>Your courses</h2></div><button class="icon-button" id="newCourseButton" type="button" aria-label="Add a new course" title="Add course">+</button></div>
+          <form class="inline-form" id="courseForm" hidden>
+            <input type="hidden" id="courseId">
+            <label>Course name<input id="courseName" required maxlength="60" placeholder="e.g. Biology 204"></label>
+            <label>Code<input id="courseCode" maxlength="16" placeholder="BIO-204"></label>
+            <label>Grade<input id="courseGrade" type="number" min="0" max="100" placeholder="92"></label>
+            <div class="form-actions"><button class="primary-button" type="submit">Save course</button><button class="quiet-button" id="cancelCourseButton" type="button">Cancel</button></div>
+          </form>
+          <div class="course-list" id="courseList"></div>
+          <div class="empty-state" id="courseEmpty"><span class="empty-number">01</span><p>No courses yet.<br><button class="link-button" id="emptyCourseButton" type="button">Add your first course</button></p></div>
+        </section>
+
+        <section class="panel assignments-panel">
+          <div class="panel-heading"><div><p class="eyebrow">02 / Work queue</p><h2>Assignments</h2></div><button class="icon-button" id="newAssignmentButton" type="button" aria-label="Add a new assignment" title="Add assignment">+</button></div>
+          <div class="assignment-tools" id="assignmentTools">
+            <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="assignmentSearch" type="search" placeholder="Search assignments" aria-label="Search assignments"></label>
+            <select id="assignmentFilter" aria-label="Filter assignments"><option value="all">All statuses</option><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select>
+          </div>
+          <form class="inline-form assignment-form" id="assignmentForm" hidden>
+            <input type="hidden" id="assignmentId">
+            <label>Assignment<input id="assignmentTitle" required maxlength="80" placeholder="Read chapter 4"></label>
+            <label>Course<select id="assignmentCourse" required></select></label>
+            <label>Due date<input id="assignmentDue" type="date" required></label>
+            <label>Priority<select id="assignmentPriority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></label>
+            <div class="form-actions"><button class="primary-button" type="submit">Save assignment</button><button class="quiet-button" id="cancelAssignmentButton" type="button">Cancel</button></div>
+          </form>
+          <div class="assignment-list" id="assignmentList"></div>
+          <div class="empty-state" id="assignmentEmpty"><span class="empty-number">02</span><p>No assignments match this view.<br><button class="link-button" id="emptyAssignmentButton" type="button">Add an assignment</button></p></div>
+        </section>
+      </div>
+    </main>
+
+    <footer><span>STUDYBOARD / 2026</span><span>Built for the next small step.</span><button class="reset-button" id="resetButton" type="button">Reset demo data</button></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
