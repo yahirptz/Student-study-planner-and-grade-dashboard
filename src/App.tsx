@@ -9,10 +9,33 @@ type Course = { id: string; name: string; code: string; grade: string };
 type Assignment = { id: string; title: string; courseId: string; due: string; priority: Priority; status: Status };
 type Store = { courses: Course[]; assignments: Assignment[]; sessions: number };
 const STORAGE_KEY = "studyboard-data-v1";
+const starterStore: Store = {
+  courses: [
+    { id: "cs319", name: "APPL ARTIFICIAL INTELLIGENCE", code: "CS319-001 (Fa26)", grade: "" },
+    { id: "cs421", name: "DATA STRUCT & ALGRTH/ANALYSIS", code: "CS421-001 (Fa26)", grade: "" },
+    { id: "cs425", name: "OPERATING SYSTEMS I", code: "CS425-001 (Fa26)", grade: "" },
+    { id: "cs475", name: "DATA MINING", code: "CS475-001 (Fa26)", grade: "" },
+  ],
+  assignments: [
+    { id: "assignment-9-3-26", title: "Assignment 9/3/26", courseId: "cs319", due: "2026-09-04", priority: "high", status: "todo" },
+    { id: "cs421-quiz-2", title: "Quiz 2", courseId: "cs421", due: "2026-09-08", priority: "high", status: "todo" },
+    { id: "cs421-quiz-1-review", title: "Quiz 1 review", courseId: "cs421", due: "2026-09-06", priority: "medium", status: "todo" },
+    { id: "cs425-quiz-1", title: "Quiz 1", courseId: "cs425", due: "2026-09-10", priority: "medium", status: "todo" },
+    { id: "cs475-exercise-1", title: "Exercise 1", courseId: "cs475", due: "2026-09-07", priority: "high", status: "todo" },
+  ],
+  sessions: 0,
+};
 const emptyStore: Store = { courses: [], assignments: [], sessions: 0 };
 
 function App() {
-  const [store, setStore] = useState<Store>(() => { try { return { ...emptyStore, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") }; } catch { return emptyStore; } });
+  const [store, setStore] = useState<Store>(() => {
+    try {
+      const saved = { ...emptyStore, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") } as Store;
+      const courses = starterStore.courses.map((course) => saved.courses.some((item) => item.id === course.id) ? saved.courses.find((item) => item.id === course.id)! : course);
+      const assignments = [...saved.assignments, ...starterStore.assignments.filter((starterAssignment) => !saved.assignments.some((assignment) => assignment.id === starterAssignment.id))];
+      return { ...saved, courses: [...courses, ...saved.courses.filter((course) => !starterStore.courses.some((starter) => starter.id === course.id))], assignments };
+    } catch { return starterStore; }
+  });
   const [version, setVersion] = useState<1 | 2 | 3>(3);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Status | "all">("all");
@@ -40,7 +63,7 @@ function App() {
       {version >= 2 && <section className="focus-strip"><div><span>ENHANCED FOCUS</span><strong>{nextAssignment ? `Next: ${nextAssignment.title}` : "Add an assignment to see your next focus."}</strong></div><div><small>STUDY SESSIONS</small><strong>{store.sessions}</strong><button onClick={() => save({ ...store, sessions: store.sessions + 1 }, "Study session logged")}>+ Log session</button></div><div><small>WEEKLY TARGET</small><div className="dots">{Array.from({ length: 7 }, (_, index) => <i key={index} className={index < Math.min(store.sessions, 7) ? "filled" : ""} />)}</div></div></section>}
       <section className="dashboard-grid"><section className="panel-v3"><PanelHeader number="01" title="Your courses" action={<MetalButton variant="success" onClick={() => editCourse()}><Plus size={15} /> Add course</MetalButton>} />{courseDraft && <form className="form-v3" onSubmit={submitCourse}><input autoFocus placeholder="Course name" value={courseDraft.name ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, name: event.target.value })} /><input placeholder="Code" value={courseDraft.code ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, code: event.target.value })} /><input type="number" min="0" max="100" placeholder="Grade" value={courseDraft.grade ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, grade: event.target.value })} /><div><button className="save-button" type="submit">Save</button><button className="cancel-button" type="button" onClick={() => setCourseDraft(null)}><X size={14} /></button></div></form>}{store.courses.length ? store.courses.map((course) => <article className="course-row" key={course.id}><div><strong>{course.name}</strong><small>{course.code || "No course code"}</small></div><div className="row-actions"><button onClick={() => editCourse(course)} aria-label={`Edit ${course.name}`}><Pencil size={14} /></button><button onClick={() => deleteCourse(course.id)} aria-label={`Delete ${course.name}`}><Trash2 size={14} /></button><b>{course.grade ? `${course.grade}%` : "--"}</b></div></article>) : <EmptyState text="No courses yet." onClick={() => editCourse()} />}</section>
         <section className="panel-v3"><PanelHeader number="02" title="Assignments" action={<LiquidButton size="lg" onClick={() => store.courses.length ? editAssignment() : editCourse()}><Plus size={15} /> {store.courses.length ? "Add assignment" : "Add course first"}</LiquidButton>} /><div className="tools-v3"><label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assignments" /></label><select value={filter} onChange={(event) => setFilter(event.target.value as Status | "all")}><option value="all">All statuses</option><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select></div>{assignmentDraft && <form className="form-v3 assignment-form" onSubmit={submitAssignment}><input autoFocus placeholder="Assignment title" value={assignmentDraft.title ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, title: event.target.value })} /><select value={assignmentDraft.courseId} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, courseId: event.target.value })}>{store.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select><input type="date" value={assignmentDraft.due ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, due: event.target.value })} /><select value={assignmentDraft.priority} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, priority: event.target.value as Priority })}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><div><button className="save-button" type="submit">Save</button><button className="cancel-button" type="button" onClick={() => setAssignmentDraft(null)}><X size={14} /></button></div></form>}{visibleAssignments.length ? visibleAssignments.map((assignment) => <AssignmentRow key={assignment.id} assignment={assignment} course={store.courses.find((course) => course.id === assignment.courseId)?.name ?? "Unassigned"} onEdit={() => editAssignment(assignment)} onDelete={() => deleteAssignment(assignment.id)} onStatus={(status) => save({ ...store, assignments: store.assignments.map((item) => item.id === assignment.id ? { ...item, status } : item) }, "Status updated")} />) : <EmptyState text="No assignments match this view." onClick={() => store.courses.length ? editAssignment() : editCourse()} />}</section></section>
-    </main><footer className="footer-v3"><span>STUDYBOARD / 2026</span><span>Version 3 / Studio tools integrated</span><button onClick={() => save(emptyStore, "Workspace reset")}>Reset workspace</button></footer>{notice && <div className="notice">{notice} <Check size={14} /></div>}</div>;
+    </main><footer className="footer-v3"><span>STUDYBOARD / 2026</span><span>Version 3 / Studio tools integrated</span><button onClick={() => save(starterStore, "Workspace reset")}>Reset workspace</button></footer>{notice && <div className="notice">{notice} <Check size={14} /></div>}</div>;
 }
 
 type LegacyProps = { version: 1 | 2; store: Store; onVersionChange: (version: 1 | 2 | 3) => void; onSave: (store: Store, message?: string) => void; courseDraft: Partial<Course> | null; setCourseDraft: (draft: Partial<Course> | null) => void; assignmentDraft: Partial<Assignment> | null; setAssignmentDraft: (draft: Partial<Assignment> | null) => void; onSubmitCourse: (event: FormEvent<HTMLFormElement>) => void; onSubmitAssignment: (event: FormEvent<HTMLFormElement>) => void; onEditCourse: (course?: Course) => void; onEditAssignment: (assignment?: Assignment) => void; onDeleteCourse: (id: string) => void; onDeleteAssignment: (id: string) => void; };
