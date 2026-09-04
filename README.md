@@ -7,6 +7,7 @@ A React, TypeScript, Tailwind CSS, and shadcn-compatible web application for the
 - **Version 1 / Basic:** The original light planner UI with add, edit, and delete courses and assignments; priority and status changes; refresh-safe `localStorage` persistence; course grades and completion summary.
 - **Version 2 / Enhanced:** The original Version 1 UI plus dashboard metrics, assignment search and status filtering, overdue highlighting, next-focus guidance, and study-session tracking.
 - **Version 3 / Studio:** A React and TypeScript rebuild using `src/components/ui`, the supplied animated gradient, liquid-glass buttons, metal buttons, Lucide icons, Tailwind CSS, and shadcn conventions. It retains the Version 1/2 data model and adds a glass workspace presentation.
+- **Version 4 / Analytics:** Keeps Version 3 available and adds a semester progression chart, clickable priority breakdown/filtering, reversible study-session logging, and a syllabus calculator. Paste or upload a text syllabus with Homework, Tests/Quizzes, Midterm, and Final percentages; V4 parses the weights, shows the total, and lets you adjust them per course.
 
 ## Run locally
 
