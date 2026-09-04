@@ -1,0 +1,15 @@
+.v5-manager { order: 3; margin-top: 20px; }
+.v5-manager-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 24px; }
+.v5-manager h3 { margin: 0 0 10px; color: #b9edd3; font: 10px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.v5-manager-row, .v5-edit-row { display: flex; align-items: center; gap: 6px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.13); }
+.v5-manager-row span { min-width: 0; flex: 1; }
+.v5-manager-row strong, .v5-manager-row small { display: block; }
+.v5-manager-row strong { overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.v5-manager-row small { margin-top: 3px; color: #aebeb4; font: 9px "DM Mono", monospace; }
+.v5-manager-row button, .v5-manager-row select, .v5-edit-row button, .v5-edit-row input { border: 1px solid rgba(255,255,255,.18); border-radius: 3px; padding: 6px 7px; color: #eaf4ed; background: rgba(255,255,255,.07); font-size: 9px; }
+.v5-manager-row button:hover, .v5-edit-row button[type="submit"] { color: #10231d; background: #b9edd3; }
+.v5-edit-row input { min-width: 0; flex: 1; }
+.v5-edit-row button:last-child { color: #c0d0c7; background: transparent; }
+.v5-weight-preview { align-self: center; color: #b9edd3; font: 10px "DM Mono", monospace; white-space: nowrap; }
+@media (max-width: 820px) { .v5-manager-grid { grid-template-columns: 1fr; gap: 20px; } }
+@media (max-width: 500px) { .v5-manager-row { flex-wrap: wrap; }.v5-manager-row span { flex-basis: 100%; }.v5-inline-class-form { justify-content: flex-start; } }

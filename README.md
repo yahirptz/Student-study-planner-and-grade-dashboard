@@ -8,6 +8,7 @@ A React, TypeScript, Tailwind CSS, and shadcn-compatible web application for the
 - **Version 2 / Enhanced:** The original Version 1 UI plus dashboard metrics, assignment search and status filtering, overdue highlighting, next-focus guidance, and study-session tracking.
 - **Version 3 / Studio:** A React and TypeScript rebuild using `src/components/ui`, the supplied animated gradient, liquid-glass buttons, metal buttons, Lucide icons, Tailwind CSS, and shadcn conventions. It retains the Version 1/2 data model and adds a glass workspace presentation.
 - **Version 4 / Analytics:** Keeps Version 3 available and adds a semester progression chart, clickable priority breakdown/filtering, reversible study-session logging, and a syllabus calculator. Paste or upload a text syllabus with Homework, Tests/Quizzes, Midterm, and Final percentages; V4 parses the weights, shows the total, and lets you adjust them per course.
+- **Version 5 / Assessments:** Keeps Version 4 available and copies its analytics UI while retaining the complete course and assignment workflow: add, edit, delete, priority changes, status changes, and refresh-safe persistence. It also adds test/project entry to the work queue. Choose a class and assessment type; V5 reads the selected class syllabus weights and shows the assessment category percentage, such as `Tests: 25% of grade`, before saving it.
 
 ## Run locally
 

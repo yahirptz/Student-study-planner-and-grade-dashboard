@@ -1,131 +1,1868 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { LiquidButton, MetalButton } from "@/components/ui/liquid-glass-button";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "high" | "medium" | "low";
 type Course = { id: string; name: string; code: string; grade: string };
-type Assignment = { id: string; title: string; courseId: string; due: string; priority: Priority; status: Status };
-type SyllabusWeights = { homework: number; tests: number; midterm: number; final: number; source: string };
-type Store = { courses: Course[]; assignments: Assignment[]; sessions: number; syllabi?: Record<string, SyllabusWeights> };
+type Assignment = {
+  id: string;
+  title: string;
+  courseId: string;
+  due: string;
+  priority: Priority;
+  status: Status;
+};
+type SyllabusWeights = {
+  homework: number;
+  tests: number;
+  midterm: number;
+  final: number;
+  source: string;
+};
+type Assessment = {
+  id: string;
+  title: string;
+  courseId: string;
+  type: "test" | "project";
+};
+type Store = {
+  courses: Course[];
+  assignments: Assignment[];
+  sessions: number;
+  syllabi?: Record<string, SyllabusWeights>;
+  assessments?: Assessment[];
+};
 const STORAGE_KEY = "studyboard-data-v1";
 const starterStore: Store = {
   courses: [
-    { id: "cs319", name: "APPL ARTIFICIAL INTELLIGENCE", code: "CS319-001 (Fa26)", grade: "" },
-    { id: "cs421", name: "DATA STRUCT & ALGRTH/ANALYSIS", code: "CS421-001 (Fa26)", grade: "" },
-    { id: "cs425", name: "OPERATING SYSTEMS I", code: "CS425-001 (Fa26)", grade: "" },
+    {
+      id: "cs319",
+      name: "APPL ARTIFICIAL INTELLIGENCE",
+      code: "CS319-001 (Fa26)",
+      grade: "",
+    },
+    {
+      id: "cs421",
+      name: "DATA STRUCT & ALGRTH/ANALYSIS",
+      code: "CS421-001 (Fa26)",
+      grade: "",
+    },
+    {
+      id: "cs425",
+      name: "OPERATING SYSTEMS I",
+      code: "CS425-001 (Fa26)",
+      grade: "",
+    },
     { id: "cs475", name: "DATA MINING", code: "CS475-001 (Fa26)", grade: "" },
   ],
   assignments: [
-    { id: "assignment-9-3-26", title: "Assignment 9/3/26", courseId: "cs319", due: "2026-09-04", priority: "high", status: "todo" },
-    { id: "cs421-quiz-2", title: "Quiz 2", courseId: "cs421", due: "2026-09-08", priority: "high", status: "todo" },
-    { id: "cs421-quiz-1-review", title: "Quiz 1 review", courseId: "cs421", due: "2026-09-06", priority: "medium", status: "todo" },
-    { id: "cs425-quiz-1", title: "Quiz 1", courseId: "cs425", due: "2026-09-10", priority: "medium", status: "todo" },
-    { id: "cs475-exercise-1", title: "Exercise 1", courseId: "cs475", due: "2026-09-07", priority: "high", status: "todo" },
+    {
+      id: "assignment-9-3-26",
+      title: "Assignment 9/3/26",
+      courseId: "cs319",
+      due: "2026-09-04",
+      priority: "high",
+      status: "todo",
+    },
+    {
+      id: "cs421-quiz-2",
+      title: "Quiz 2",
+      courseId: "cs421",
+      due: "2026-09-08",
+      priority: "high",
+      status: "todo",
+    },
+    {
+      id: "cs421-quiz-1-review",
+      title: "Quiz 1 review",
+      courseId: "cs421",
+      due: "2026-09-06",
+      priority: "medium",
+      status: "todo",
+    },
+    {
+      id: "cs425-quiz-1",
+      title: "Quiz 1",
+      courseId: "cs425",
+      due: "2026-09-10",
+      priority: "medium",
+      status: "todo",
+    },
+    {
+      id: "cs475-exercise-1",
+      title: "Exercise 1",
+      courseId: "cs475",
+      due: "2026-09-07",
+      priority: "high",
+      status: "todo",
+    },
   ],
   sessions: 0,
 };
-const emptyStore: Store = { courses: [], assignments: [], sessions: 0, syllabi: {} };
+const emptyStore: Store = {
+  courses: [],
+  assignments: [],
+  sessions: 0,
+  syllabi: {},
+  assessments: [],
+};
 
 function App() {
   const [store, setStore] = useState<Store>(() => {
     try {
-      const saved = { ...emptyStore, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") } as Store;
-      const courses = starterStore.courses.map((course) => saved.courses.some((item) => item.id === course.id) ? saved.courses.find((item) => item.id === course.id)! : course);
-      const assignments = [...saved.assignments, ...starterStore.assignments.filter((starterAssignment) => !saved.assignments.some((assignment) => assignment.id === starterAssignment.id))];
-      return { ...saved, courses: [...courses, ...saved.courses.filter((course) => !starterStore.courses.some((starter) => starter.id === course.id))], assignments };
-    } catch { return starterStore; }
+      const saved = {
+        ...emptyStore,
+        ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"),
+      } as Store;
+      const courses = starterStore.courses.map((course) =>
+        saved.courses.some((item) => item.id === course.id)
+          ? saved.courses.find((item) => item.id === course.id)!
+          : course,
+      );
+      const assignments = [
+        ...saved.assignments,
+        ...starterStore.assignments.filter(
+          (starterAssignment) =>
+            !saved.assignments.some(
+              (assignment) => assignment.id === starterAssignment.id,
+            ),
+        ),
+      ];
+      return {
+        ...saved,
+        courses: [
+          ...courses,
+          ...saved.courses.filter(
+            (course) =>
+              !starterStore.courses.some((starter) => starter.id === course.id),
+          ),
+        ],
+        assignments,
+      };
+    } catch {
+      return starterStore;
+    }
   });
-  const [version, setVersion] = useState<1 | 2 | 3 | 4>(3);
+  const [version, setVersion] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Status | "all">("all");
   const [courseDraft, setCourseDraft] = useState<Partial<Course> | null>(null);
-  const [assignmentDraft, setAssignmentDraft] = useState<Partial<Assignment> | null>(null);
+  const [assignmentDraft, setAssignmentDraft] =
+    useState<Partial<Assignment> | null>(null);
   const [notice, setNotice] = useState("");
-  const save = (next: Store, message?: string) => { setStore(next); localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); if (message) { setNotice(message); window.setTimeout(() => setNotice(""), 1800); } };
-  useEffect(() => { document.title = `Studyboard | Version ${version}`; }, [version]);
-  const grades = store.courses.map((course) => Number(course.grade)).filter((grade, index) => store.courses[index].grade.trim() !== "" && Number.isFinite(grade));
-  const completed = store.assignments.filter((assignment) => assignment.status === "done").length;
-  const visibleAssignments = store.assignments.filter((assignment) => { const course = store.courses.find((item) => item.id === assignment.courseId); return `${assignment.title} ${course?.name ?? ""}`.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || assignment.status === filter); });
-  const nextAssignment = useMemo(() => store.assignments.filter((assignment) => assignment.status !== "done").sort((a, b) => a.due.localeCompare(b.due))[0], [store.assignments]);
-  const editCourse = (course?: Course) => setCourseDraft(course ?? { name: "", code: "", grade: "" });
-  const editAssignment = (assignment?: Assignment) => setAssignmentDraft(assignment ?? { title: "", courseId: store.courses[0]?.id ?? "", due: new Date().toISOString().slice(0, 10), priority: "medium", status: "todo" });
-  const submitCourse = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!courseDraft?.name?.trim()) return; const course: Course = { id: courseDraft.id ?? crypto.randomUUID(), name: courseDraft.name.trim(), code: courseDraft.code?.trim() ?? "", grade: courseDraft.grade ?? "" }; save({ ...store, courses: courseDraft.id ? store.courses.map((item) => item.id === course.id ? course : item) : [...store.courses, course] }, courseDraft.id ? "Course updated" : "Course added"); setCourseDraft(null); };
-  const submitAssignment = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!assignmentDraft?.title?.trim() || !assignmentDraft.courseId) return; const assignment: Assignment = { id: assignmentDraft.id ?? crypto.randomUUID(), title: assignmentDraft.title.trim(), courseId: assignmentDraft.courseId, due: assignmentDraft.due ?? "", priority: assignmentDraft.priority as Priority ?? "medium", status: assignmentDraft.status as Status ?? "todo" }; save({ ...store, assignments: assignmentDraft.id ? store.assignments.map((item) => item.id === assignment.id ? assignment : item) : [...store.assignments, assignment] }, assignmentDraft.id ? "Assignment updated" : "Assignment added"); setAssignmentDraft(null); };
-  const deleteCourse = (id: string) => save({ ...store, courses: store.courses.filter((item) => item.id !== id), assignments: store.assignments.filter((item) => item.courseId !== id) }, "Course deleted");
-  const deleteAssignment = (id: string) => save({ ...store, assignments: store.assignments.filter((item) => item.id !== id) }, "Assignment deleted");
+  const save = (next: Store, message?: string) => {
+    setStore(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    if (message) {
+      setNotice(message);
+      window.setTimeout(() => setNotice(""), 1800);
+    }
+  };
+  useEffect(() => {
+    document.title = `Studyboard | Version ${version}`;
+  }, [version]);
+  const grades = store.courses
+    .map((course) => Number(course.grade))
+    .filter(
+      (grade, index) =>
+        store.courses[index].grade.trim() !== "" && Number.isFinite(grade),
+    );
+  const completed = store.assignments.filter(
+    (assignment) => assignment.status === "done",
+  ).length;
+  const visibleAssignments = store.assignments.filter((assignment) => {
+    const course = store.courses.find(
+      (item) => item.id === assignment.courseId,
+    );
+    return (
+      `${assignment.title} ${course?.name ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (filter === "all" || assignment.status === filter)
+    );
+  });
+  const nextAssignment = useMemo(
+    () =>
+      store.assignments
+        .filter((assignment) => assignment.status !== "done")
+        .sort((a, b) => a.due.localeCompare(b.due))[0],
+    [store.assignments],
+  );
+  const editCourse = (course?: Course) =>
+    setCourseDraft(course ?? { name: "", code: "", grade: "" });
+  const editAssignment = (assignment?: Assignment) =>
+    setAssignmentDraft(
+      assignment ?? {
+        title: "",
+        courseId: store.courses[0]?.id ?? "",
+        due: new Date().toISOString().slice(0, 10),
+        priority: "medium",
+        status: "todo",
+      },
+    );
+  const submitCourse = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!courseDraft?.name?.trim()) return;
+    const course: Course = {
+      id: courseDraft.id ?? crypto.randomUUID(),
+      name: courseDraft.name.trim(),
+      code: courseDraft.code?.trim() ?? "",
+      grade: courseDraft.grade ?? "",
+    };
+    save(
+      {
+        ...store,
+        courses: courseDraft.id
+          ? store.courses.map((item) => (item.id === course.id ? course : item))
+          : [...store.courses, course],
+      },
+      courseDraft.id ? "Course updated" : "Course added",
+    );
+    setCourseDraft(null);
+  };
+  const submitAssignment = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!assignmentDraft?.title?.trim() || !assignmentDraft.courseId) return;
+    const assignment: Assignment = {
+      id: assignmentDraft.id ?? crypto.randomUUID(),
+      title: assignmentDraft.title.trim(),
+      courseId: assignmentDraft.courseId,
+      due: assignmentDraft.due ?? "",
+      priority: (assignmentDraft.priority as Priority) ?? "medium",
+      status: (assignmentDraft.status as Status) ?? "todo",
+    };
+    save(
+      {
+        ...store,
+        assignments: assignmentDraft.id
+          ? store.assignments.map((item) =>
+              item.id === assignment.id ? assignment : item,
+            )
+          : [...store.assignments, assignment],
+      },
+      assignmentDraft.id ? "Assignment updated" : "Assignment added",
+    );
+    setAssignmentDraft(null);
+  };
+  const deleteCourse = (id: string) =>
+    save(
+      {
+        ...store,
+        courses: store.courses.filter((item) => item.id !== id),
+        assignments: store.assignments.filter((item) => item.courseId !== id),
+      },
+      "Course deleted",
+    );
+  const deleteAssignment = (id: string) =>
+    save(
+      {
+        ...store,
+        assignments: store.assignments.filter((item) => item.id !== id),
+      },
+      "Assignment deleted",
+    );
 
-  if (version < 3) return <LegacyPlanner version={version as 1 | 2} store={store} onVersionChange={setVersion} onSave={save} courseDraft={courseDraft} setCourseDraft={setCourseDraft} assignmentDraft={assignmentDraft} setAssignmentDraft={setAssignmentDraft} onSubmitCourse={submitCourse} onSubmitAssignment={submitAssignment} onEditCourse={editCourse} onEditAssignment={editAssignment} onDeleteCourse={deleteCourse} onDeleteAssignment={deleteAssignment} />;
-  if (version === 4) return <V4Planner store={store} onVersionChange={setVersion} onSave={save} />;
+  if (version < 3)
+    return (
+      <LegacyPlanner
+        version={version as 1 | 2}
+        store={store}
+        onVersionChange={setVersion}
+        onSave={save}
+        courseDraft={courseDraft}
+        setCourseDraft={setCourseDraft}
+        assignmentDraft={assignmentDraft}
+        setAssignmentDraft={setAssignmentDraft}
+        onSubmitCourse={submitCourse}
+        onSubmitAssignment={submitAssignment}
+        onEditCourse={editCourse}
+        onEditAssignment={editAssignment}
+        onDeleteCourse={deleteCourse}
+        onDeleteAssignment={deleteAssignment}
+      />
+    );
+  if (version === 4)
+    return (
+      <V4Planner store={store} onVersionChange={setVersion} onSave={save} />
+    );
+  if (version === 5)
+    return (
+      <V4Planner
+        store={store}
+        onVersionChange={setVersion}
+        onSave={save}
+        showV5
+      />
+    );
 
-  return <div className="app-v3"><AnimatedGradient config={{ preset: "Mist", speed: 12, swirl: 35 }} noise={{ opacity: .12 }} /><header className="topbar-v3"><a className="brand-v3" href="/">S<span>tudyboard.</span></a><nav className="version-nav" aria-label="Application version"><span>BUILD</span>{([1, 2, 3, 4] as const).map((item) => <button key={item} className={version === item ? "active" : ""} onClick={() => setVersion(item)}>0{item} / {item === 1 ? "Basic" : item === 2 ? "Enhanced" : item === 3 ? "Studio" : "Analytics"}</button>)}</nav><span className="online"><i /> Local workspace</span></header>
-    <main className="main-v3"><section className="hero-v3"><div><p className="kicker">Student workspace / version {version}</p><h1>Make room for<br /><em>good work.</em></h1></div><div className="hero-copy"><p>Plan with less noise. Keep your next deadline close and your progress visible.</p><span>LOCAL DATA / AUTOSAVED</span></div></section>
-      <section className="metric-grid"><Metric label="Active courses" value={String(store.courses.length)} detail="this semester" /><Metric label="Open assignments" value={String(store.assignments.filter((item) => item.status !== "done").length)} detail="waiting to be planned" /><Metric label="Average grade" value={grades.length ? `${Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)}%` : "--"} detail="across graded courses" /><Metric label="Completion" value={`${store.assignments.length ? Math.round(completed / store.assignments.length * 100) : 0}%`} detail="assignment progress" /></section>
-      {version >= 2 && <section className="focus-strip"><div><span>ENHANCED FOCUS</span><strong>{nextAssignment ? `Next: ${nextAssignment.title}` : "Add an assignment to see your next focus."}</strong></div><div><small>STUDY SESSIONS</small><strong>{store.sessions}</strong><button onClick={() => save({ ...store, sessions: store.sessions + 1 }, "Study session logged")}>+ Log session</button></div><div><small>WEEKLY TARGET</small><div className="dots">{Array.from({ length: 7 }, (_, index) => <i key={index} className={index < Math.min(store.sessions, 7) ? "filled" : ""} />)}</div></div></section>}
-      <section className="dashboard-grid"><section className="panel-v3"><PanelHeader number="01" title="Your courses" action={<MetalButton variant="success" onClick={() => editCourse()}><Plus size={15} /> Add course</MetalButton>} />{courseDraft && <form className="form-v3" onSubmit={submitCourse}><input autoFocus placeholder="Course name" value={courseDraft.name ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, name: event.target.value })} /><input placeholder="Code" value={courseDraft.code ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, code: event.target.value })} /><input type="number" min="0" max="100" placeholder="Grade" value={courseDraft.grade ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, grade: event.target.value })} /><div><button className="save-button" type="submit">Save</button><button className="cancel-button" type="button" onClick={() => setCourseDraft(null)}><X size={14} /></button></div></form>}{store.courses.length ? store.courses.map((course) => <article className="course-row" key={course.id}><div><strong>{course.name}</strong><small>{course.code || "No course code"}</small></div><div className="row-actions"><button onClick={() => editCourse(course)} aria-label={`Edit ${course.name}`}><Pencil size={14} /></button><button onClick={() => deleteCourse(course.id)} aria-label={`Delete ${course.name}`}><Trash2 size={14} /></button><b>{course.grade ? `${course.grade}%` : "--"}</b></div></article>) : <EmptyState text="No courses yet." onClick={() => editCourse()} />}</section>
-        <section className="panel-v3"><PanelHeader number="02" title="Assignments" action={<LiquidButton size="lg" onClick={() => store.courses.length ? editAssignment() : editCourse()}><Plus size={15} /> {store.courses.length ? "Add assignment" : "Add course first"}</LiquidButton>} /><div className="tools-v3"><label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assignments" /></label><select value={filter} onChange={(event) => setFilter(event.target.value as Status | "all")}><option value="all">All statuses</option><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select></div>{assignmentDraft && <form className="form-v3 assignment-form" onSubmit={submitAssignment}><input autoFocus placeholder="Assignment title" value={assignmentDraft.title ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, title: event.target.value })} /><select value={assignmentDraft.courseId} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, courseId: event.target.value })}>{store.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select><input type="date" value={assignmentDraft.due ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, due: event.target.value })} /><select value={assignmentDraft.priority} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, priority: event.target.value as Priority })}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><div><button className="save-button" type="submit">Save</button><button className="cancel-button" type="button" onClick={() => setAssignmentDraft(null)}><X size={14} /></button></div></form>}{visibleAssignments.length ? visibleAssignments.map((assignment) => <AssignmentRow key={assignment.id} assignment={assignment} course={store.courses.find((course) => course.id === assignment.courseId)?.name ?? "Unassigned"} onEdit={() => editAssignment(assignment)} onDelete={() => deleteAssignment(assignment.id)} onStatus={(status) => save({ ...store, assignments: store.assignments.map((item) => item.id === assignment.id ? { ...item, status } : item) }, "Status updated")} />) : <EmptyState text="No assignments match this view." onClick={() => store.courses.length ? editAssignment() : editCourse()} />}</section></section>
-    </main><footer className="footer-v3"><span>STUDYBOARD / 2026</span><span>Version 3 / Studio tools integrated</span><button onClick={() => save(starterStore, "Workspace reset")}>Reset workspace</button></footer>{notice && <div className="notice">{notice} <Check size={14} /></div>}</div>;
+  return (
+    <div className="app-v3">
+      <AnimatedGradient
+        config={{ preset: "Mist", speed: 12, swirl: 35 }}
+        noise={{ opacity: 0.12 }}
+      />
+      <header className="topbar-v3">
+        <a className="brand-v3" href="/">
+          S<span>tudyboard.</span>
+        </a>
+        <nav className="version-nav" aria-label="Application version">
+          <span>BUILD</span>
+          {([1, 2, 3, 4, 5] as const).map((item) => (
+            <button
+              key={item}
+              className={version === item ? "active" : ""}
+              onClick={() => setVersion(item)}
+            >
+              0{item} /{" "}
+              {item === 1
+                ? "Basic"
+                : item === 2
+                  ? "Enhanced"
+                  : item === 3
+                    ? "Studio"
+                    : item === 4
+                      ? "Analytics"
+                      : "Assessments"}
+            </button>
+          ))}
+        </nav>
+        <span className="online">
+          <i /> Local workspace
+        </span>
+      </header>
+      <main className="main-v3">
+        <section className="hero-v3">
+          <div>
+            <p className="kicker">Student workspace / version {version}</p>
+            <h1>
+              Make room for
+              <br />
+              <em>good work.</em>
+            </h1>
+          </div>
+          <div className="hero-copy">
+            <p>
+              Plan with less noise. Keep your next deadline close and your
+              progress visible.
+            </p>
+            <span>LOCAL DATA / AUTOSAVED</span>
+          </div>
+        </section>
+        <section className="metric-grid">
+          <Metric
+            label="Active courses"
+            value={String(store.courses.length)}
+            detail="this semester"
+          />
+          <Metric
+            label="Open assignments"
+            value={String(
+              store.assignments.filter((item) => item.status !== "done").length,
+            )}
+            detail="waiting to be planned"
+          />
+          <Metric
+            label="Average grade"
+            value={
+              grades.length
+                ? `${Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)}%`
+                : "--"
+            }
+            detail="across graded courses"
+          />
+          <Metric
+            label="Completion"
+            value={`${store.assignments.length ? Math.round((completed / store.assignments.length) * 100) : 0}%`}
+            detail="assignment progress"
+          />
+        </section>
+        {version >= 2 && (
+          <section className="focus-strip">
+            <div>
+              <span>ENHANCED FOCUS</span>
+              <strong>
+                {nextAssignment
+                  ? `Next: ${nextAssignment.title}`
+                  : "Add an assignment to see your next focus."}
+              </strong>
+            </div>
+            <div>
+              <small>STUDY SESSIONS</small>
+              <strong>{store.sessions}</strong>
+              <button
+                onClick={() =>
+                  save(
+                    { ...store, sessions: store.sessions + 1 },
+                    "Study session logged",
+                  )
+                }
+              >
+                + Log session
+              </button>
+            </div>
+            <div>
+              <small>WEEKLY TARGET</small>
+              <div className="dots">
+                {Array.from({ length: 7 }, (_, index) => (
+                  <i
+                    key={index}
+                    className={
+                      index < Math.min(store.sessions, 7) ? "filled" : ""
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+        <section className="dashboard-grid">
+          <section className="panel-v3">
+            <PanelHeader
+              number="01"
+              title="Your courses"
+              action={
+                <MetalButton variant="success" onClick={() => editCourse()}>
+                  <Plus size={15} /> Add course
+                </MetalButton>
+              }
+            />
+            {courseDraft && (
+              <form className="form-v3" onSubmit={submitCourse}>
+                <input
+                  autoFocus
+                  placeholder="Course name"
+                  value={courseDraft.name ?? ""}
+                  onChange={(event) =>
+                    setCourseDraft({ ...courseDraft, name: event.target.value })
+                  }
+                />
+                <input
+                  placeholder="Code"
+                  value={courseDraft.code ?? ""}
+                  onChange={(event) =>
+                    setCourseDraft({ ...courseDraft, code: event.target.value })
+                  }
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Grade"
+                  value={courseDraft.grade ?? ""}
+                  onChange={(event) =>
+                    setCourseDraft({
+                      ...courseDraft,
+                      grade: event.target.value,
+                    })
+                  }
+                />
+                <div>
+                  <button className="save-button" type="submit">
+                    Save
+                  </button>
+                  <button
+                    className="cancel-button"
+                    type="button"
+                    onClick={() => setCourseDraft(null)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </form>
+            )}
+            {store.courses.length ? (
+              store.courses.map((course) => (
+                <article className="course-row" key={course.id}>
+                  <div>
+                    <strong>{course.name}</strong>
+                    <small>{course.code || "No course code"}</small>
+                  </div>
+                  <div className="row-actions">
+                    <button
+                      onClick={() => editCourse(course)}
+                      aria-label={`Edit ${course.name}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => deleteCourse(course.id)}
+                      aria-label={`Delete ${course.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    <b>{course.grade ? `${course.grade}%` : "--"}</b>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <EmptyState text="No courses yet." onClick={() => editCourse()} />
+            )}
+          </section>
+          <section className="panel-v3">
+            <PanelHeader
+              number="02"
+              title="Assignments"
+              action={
+                <LiquidButton
+                  size="lg"
+                  onClick={() =>
+                    store.courses.length ? editAssignment() : editCourse()
+                  }
+                >
+                  <Plus size={15} />{" "}
+                  {store.courses.length ? "Add assignment" : "Add course first"}
+                </LiquidButton>
+              }
+            />
+            <div className="tools-v3">
+              <label>
+                <Search size={15} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search assignments"
+                />
+              </label>
+              <select
+                value={filter}
+                onChange={(event) =>
+                  setFilter(event.target.value as Status | "all")
+                }
+              >
+                <option value="all">All statuses</option>
+                <option value="todo">To do</option>
+                <option value="progress">In progress</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+            {assignmentDraft && (
+              <form
+                className="form-v3 assignment-form"
+                onSubmit={submitAssignment}
+              >
+                <input
+                  autoFocus
+                  placeholder="Assignment title"
+                  value={assignmentDraft.title ?? ""}
+                  onChange={(event) =>
+                    setAssignmentDraft({
+                      ...assignmentDraft,
+                      title: event.target.value,
+                    })
+                  }
+                />
+                <select
+                  value={assignmentDraft.courseId}
+                  onChange={(event) =>
+                    setAssignmentDraft({
+                      ...assignmentDraft,
+                      courseId: event.target.value,
+                    })
+                  }
+                >
+                  {store.courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={assignmentDraft.due ?? ""}
+                  onChange={(event) =>
+                    setAssignmentDraft({
+                      ...assignmentDraft,
+                      due: event.target.value,
+                    })
+                  }
+                />
+                <select
+                  value={assignmentDraft.priority}
+                  onChange={(event) =>
+                    setAssignmentDraft({
+                      ...assignmentDraft,
+                      priority: event.target.value as Priority,
+                    })
+                  }
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <div>
+                  <button className="save-button" type="submit">
+                    Save
+                  </button>
+                  <button
+                    className="cancel-button"
+                    type="button"
+                    onClick={() => setAssignmentDraft(null)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </form>
+            )}
+            {visibleAssignments.length ? (
+              visibleAssignments.map((assignment) => (
+                <AssignmentRow
+                  key={assignment.id}
+                  assignment={assignment}
+                  course={
+                    store.courses.find(
+                      (course) => course.id === assignment.courseId,
+                    )?.name ?? "Unassigned"
+                  }
+                  onEdit={() => editAssignment(assignment)}
+                  onDelete={() => deleteAssignment(assignment.id)}
+                  onStatus={(status) =>
+                    save(
+                      {
+                        ...store,
+                        assignments: store.assignments.map((item) =>
+                          item.id === assignment.id
+                            ? { ...item, status }
+                            : item,
+                        ),
+                      },
+                      "Status updated",
+                    )
+                  }
+                />
+              ))
+            ) : (
+              <EmptyState
+                text="No assignments match this view."
+                onClick={() =>
+                  store.courses.length ? editAssignment() : editCourse()
+                }
+              />
+            )}
+          </section>
+        </section>
+      </main>
+      <footer className="footer-v3">
+        <span>STUDYBOARD / 2026</span>
+        <span>Version 3 / Studio tools integrated</span>
+        <button onClick={() => save(starterStore, "Workspace reset")}>
+          Reset workspace
+        </button>
+      </footer>
+      {notice && (
+        <div className="notice">
+          {notice} <Check size={14} />
+        </div>
+      )}
+    </div>
+  );
 }
 
-type LegacyProps = { version: 1 | 2; store: Store; onVersionChange: (version: 1 | 2 | 3 | 4) => void; onSave: (store: Store, message?: string) => void; courseDraft: Partial<Course> | null; setCourseDraft: (draft: Partial<Course> | null) => void; assignmentDraft: Partial<Assignment> | null; setAssignmentDraft: (draft: Partial<Assignment> | null) => void; onSubmitCourse: (event: FormEvent<HTMLFormElement>) => void; onSubmitAssignment: (event: FormEvent<HTMLFormElement>) => void; onEditCourse: (course?: Course) => void; onEditAssignment: (assignment?: Assignment) => void; onDeleteCourse: (id: string) => void; onDeleteAssignment: (id: string) => void; };
+type LegacyProps = {
+  version: 1 | 2;
+  store: Store;
+  onVersionChange: (version: 1 | 2 | 3 | 4 | 5) => void;
+  onSave: (store: Store, message?: string) => void;
+  courseDraft: Partial<Course> | null;
+  setCourseDraft: (draft: Partial<Course> | null) => void;
+  assignmentDraft: Partial<Assignment> | null;
+  setAssignmentDraft: (draft: Partial<Assignment> | null) => void;
+  onSubmitCourse: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmitAssignment: (event: FormEvent<HTMLFormElement>) => void;
+  onEditCourse: (course?: Course) => void;
+  onEditAssignment: (assignment?: Assignment) => void;
+  onDeleteCourse: (id: string) => void;
+  onDeleteAssignment: (id: string) => void;
+};
 
-function LegacyPlanner({ version, store, onVersionChange, onSave, courseDraft, setCourseDraft, assignmentDraft, setAssignmentDraft, onSubmitCourse, onSubmitAssignment, onEditCourse, onEditAssignment, onDeleteCourse, onDeleteAssignment }: LegacyProps) {
+function LegacyPlanner({
+  version,
+  store,
+  onVersionChange,
+  onSave,
+  courseDraft,
+  setCourseDraft,
+  assignmentDraft,
+  setAssignmentDraft,
+  onSubmitCourse,
+  onSubmitAssignment,
+  onEditCourse,
+  onEditAssignment,
+  onDeleteCourse,
+  onDeleteAssignment,
+}: LegacyProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Status | "all">("all");
-  const grades = store.courses.map((course) => Number(course.grade)).filter((grade, index) => store.courses[index].grade.trim() !== "" && Number.isFinite(grade));
-  const done = store.assignments.filter((assignment) => assignment.status === "done").length;
-  const visible = store.assignments.filter((assignment) => { const course = store.courses.find((item) => item.id === assignment.courseId); return `${assignment.title} ${course?.name ?? ""}`.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || assignment.status === filter); });
-  return <div className="legacy-root"><div className="app-shell"><header className="topbar"><a className="brand" href="/" aria-label="Studyboard home"><span className="brand-mark">S</span><span>studyboard<span className="brand-dot">.</span></span></a><div className="version-control" aria-label="Choose app version"><span className="version-label">Build</span>{([1, 2, 3, 4] as const).map((item) => <button key={item} className={version === item ? "version-button active" : "version-button"} onClick={() => onVersionChange(item)}>{`0${item} / ${item === 1 ? "Basic" : item === 2 ? "Enhanced" : item === 3 ? "Studio" : "Analytics"}`}</button>)}</div><div className="header-date"><span className="status-dot" />Today</div></header>
-    <main><section className="intro-grid"><div><p className="eyebrow">Student workspace <span>/ version {version}</span></p><h1>Make room for<br /><em>good work.</em></h1></div><div className="intro-note"><p>Keep your courses clear, your next deadline close, and your progress visible.</p><span className="mono">LOCAL DATA / AUTOSAVED</span></div></section>
-      <section className="stats-row" aria-label="Study overview"><article className="stat-card accent-card"><span className="stat-label">Active courses</span><strong>{store.courses.length}</strong><span className="stat-detail">this semester</span></article><article className="stat-card"><span className="stat-label">Open assignments</span><strong>{store.assignments.filter((item) => item.status !== "done").length}</strong><span className="stat-detail">waiting to be planned</span></article><article className="stat-card"><span className="stat-label">Average grade</span><strong>{grades.length ? `${Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)}%` : "--"}</strong><span className="stat-detail">across graded courses</span></article><article className="stat-card"><div className="stat-top"><span className="stat-label">Completion</span><strong>{store.assignments.length ? Math.round(done / store.assignments.length * 100) : 0}%</strong></div><div className="progress-track"><span style={{ width: `${store.assignments.length ? done / store.assignments.length * 100 : 0}%` }} /></div><span className="stat-detail">assignment progress</span></article></section>
-      {version === 2 && <section className="enhanced-strip"><div className="focus-message"><span className="focus-kicker">ENHANCED FOCUS</span><strong>{store.assignments.find((item) => item.status !== "done")?.title ?? "Add an assignment to see your next focus."}</strong></div><div className="session-counter"><span className="stat-label">Study sessions</span><strong>{store.sessions}</strong><button className="text-button" onClick={() => onSave({ ...store, sessions: store.sessions + 1 }, "Study session logged")}>+ Log session</button></div><div className="week-meter"><span className="stat-label">Weekly target</span><div className="week-dots">{Array.from({ length: 7 }, (_, index) => <i key={index} className={index < Math.min(store.sessions, 7) ? "filled" : ""} />)}</div></div></section>}
-      <div className="workspace-grid"><section className="panel"><div className="panel-heading"><div><p className="eyebrow">01 / Curriculum</p><h2>Your courses</h2></div><button className="icon-button" onClick={() => onEditCourse()} aria-label="Add a new course">+</button></div>{courseDraft && <form className="inline-form" onSubmit={onSubmitCourse}><label>Course name<input autoFocus required value={courseDraft.name ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, name: event.target.value })} /></label><label>Code<input value={courseDraft.code ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, code: event.target.value })} /></label><label>Grade<input type="number" value={courseDraft.grade ?? ""} onChange={(event) => setCourseDraft({ ...courseDraft, grade: event.target.value })} /></label><div className="form-actions"><button className="primary-button">Save course</button><button className="quiet-button" type="button" onClick={() => setCourseDraft(null)}>Cancel</button></div></form>}{store.courses.length ? <div className="course-list">{store.courses.map((course) => <article className="course-item" key={course.id}><div className="course-info"><strong>{course.name}</strong><span>{course.code || "No course code"}</span></div><div className="item-actions"><button className="small-button" onClick={() => onEditCourse(course)}>Edit</button><button className="small-button" onClick={() => onDeleteCourse(course.id)}>Delete</button><span className="grade-badge">{course.grade ? `${course.grade}%` : "--"}</span></div></article>)}</div> : <div className="empty-state"><span className="empty-number">01</span><p>No courses yet.<br /><button className="link-button" onClick={() => onEditCourse()}>Add your first course</button></p></div>}</section>
-        <section className="panel"><div className="panel-heading"><div><p className="eyebrow">02 / Work queue</p><h2>Assignments</h2></div><button className="icon-button" onClick={() => store.courses.length ? onEditAssignment() : onEditCourse()} aria-label="Add a new assignment">+</button></div><div className="assignment-tools"><label className="search-wrap"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assignments" /></label><select value={filter} onChange={(event) => setFilter(event.target.value as Status | "all")}><option value="all">All statuses</option><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select></div>{assignmentDraft && <form className="inline-form assignment-form" onSubmit={onSubmitAssignment}><label>Assignment<input autoFocus required value={assignmentDraft.title ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, title: event.target.value })} /></label><label>Course<select value={assignmentDraft.courseId ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, courseId: event.target.value })}>{store.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select></label><label>Due date<input type="date" required value={assignmentDraft.due ?? ""} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, due: event.target.value })} /></label><label>Priority<select value={assignmentDraft.priority ?? "medium"} onChange={(event) => setAssignmentDraft({ ...assignmentDraft, priority: event.target.value as Priority })}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><div className="form-actions"><button className="primary-button">Save assignment</button><button className="quiet-button" type="button" onClick={() => setAssignmentDraft(null)}>Cancel</button></div></form>}{visible.length ? <div className="assignment-list">{visible.map((assignment) => <article className={`assignment-item ${assignment.status === "done" ? "done" : ""}`} key={assignment.id}><span className={`priority-dot ${assignment.priority}`} /><div className="assignment-main"><strong>{assignment.title}</strong><span>{store.courses.find((course) => course.id === assignment.courseId)?.name ?? "Unassigned"} · Due {new Date(`${assignment.due}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span></div><div className="assignment-meta"><select className="status-select" value={assignment.status} onChange={(event) => onSave({ ...store, assignments: store.assignments.map((item) => item.id === assignment.id ? { ...item, status: event.target.value as Status } : item) }, "Status updated")}><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select><button className="small-button" onClick={() => onEditAssignment(assignment)}>Edit</button><button className="small-button" onClick={() => onDeleteAssignment(assignment.id)}>Delete</button></div></article>)}</div> : <div className="empty-state"><span className="empty-number">02</span><p>No assignments match this view.<br /><button className="link-button" onClick={() => store.courses.length ? onEditAssignment() : onEditCourse()}>Add an assignment</button></p></div>}</section></div></main><footer><span>STUDYBOARD / 2026</span><span>{version === 1 ? "Basic planner workspace" : "Enhanced planner workspace"}</span><button className="reset-button" onClick={() => onSave(emptyStore, "Workspace reset")}>Reset workspace</button></footer></div></div>;
+  const grades = store.courses
+    .map((course) => Number(course.grade))
+    .filter(
+      (grade, index) =>
+        store.courses[index].grade.trim() !== "" && Number.isFinite(grade),
+    );
+  const done = store.assignments.filter(
+    (assignment) => assignment.status === "done",
+  ).length;
+  const visible = store.assignments.filter((assignment) => {
+    const course = store.courses.find(
+      (item) => item.id === assignment.courseId,
+    );
+    return (
+      `${assignment.title} ${course?.name ?? ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      (filter === "all" || assignment.status === filter)
+    );
+  });
+  return (
+    <div className="legacy-root">
+      <div className="app-shell">
+        <header className="topbar">
+          <a className="brand" href="/" aria-label="Studyboard home">
+            <span className="brand-mark">S</span>
+            <span>
+              studyboard<span className="brand-dot">.</span>
+            </span>
+          </a>
+          <div className="version-control" aria-label="Choose app version">
+            <span className="version-label">Build</span>
+            {([1, 2, 3, 4, 5] as const).map((item) => (
+              <button
+                key={item}
+                className={
+                  version === item ? "version-button active" : "version-button"
+                }
+                onClick={() => onVersionChange(item)}
+              >{`0${item} / ${item === 1 ? "Basic" : item === 2 ? "Enhanced" : item === 3 ? "Studio" : item === 4 ? "Analytics" : "Assessments"}`}</button>
+            ))}
+          </div>
+          <div className="header-date">
+            <span className="status-dot" />
+            Today
+          </div>
+        </header>
+        <main>
+          <section className="intro-grid">
+            <div>
+              <p className="eyebrow">
+                Student workspace <span>/ version {version}</span>
+              </p>
+              <h1>
+                Make room for
+                <br />
+                <em>good work.</em>
+              </h1>
+            </div>
+            <div className="intro-note">
+              <p>
+                Keep your courses clear, your next deadline close, and your
+                progress visible.
+              </p>
+              <span className="mono">LOCAL DATA / AUTOSAVED</span>
+            </div>
+          </section>
+          <section className="stats-row" aria-label="Study overview">
+            <article className="stat-card accent-card">
+              <span className="stat-label">Active courses</span>
+              <strong>{store.courses.length}</strong>
+              <span className="stat-detail">this semester</span>
+            </article>
+            <article className="stat-card">
+              <span className="stat-label">Open assignments</span>
+              <strong>
+                {
+                  store.assignments.filter((item) => item.status !== "done")
+                    .length
+                }
+              </strong>
+              <span className="stat-detail">waiting to be planned</span>
+            </article>
+            <article className="stat-card">
+              <span className="stat-label">Average grade</span>
+              <strong>
+                {grades.length
+                  ? `${Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)}%`
+                  : "--"}
+              </strong>
+              <span className="stat-detail">across graded courses</span>
+            </article>
+            <article className="stat-card">
+              <div className="stat-top">
+                <span className="stat-label">Completion</span>
+                <strong>
+                  {store.assignments.length
+                    ? Math.round((done / store.assignments.length) * 100)
+                    : 0}
+                  %
+                </strong>
+              </div>
+              <div className="progress-track">
+                <span
+                  style={{
+                    width: `${store.assignments.length ? (done / store.assignments.length) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <span className="stat-detail">assignment progress</span>
+            </article>
+          </section>
+          {version === 2 && (
+            <section className="enhanced-strip">
+              <div className="focus-message">
+                <span className="focus-kicker">ENHANCED FOCUS</span>
+                <strong>
+                  {store.assignments.find((item) => item.status !== "done")
+                    ?.title ?? "Add an assignment to see your next focus."}
+                </strong>
+              </div>
+              <div className="session-counter">
+                <span className="stat-label">Study sessions</span>
+                <strong>{store.sessions}</strong>
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    onSave(
+                      { ...store, sessions: store.sessions + 1 },
+                      "Study session logged",
+                    )
+                  }
+                >
+                  + Log session
+                </button>
+              </div>
+              <div className="week-meter">
+                <span className="stat-label">Weekly target</span>
+                <div className="week-dots">
+                  {Array.from({ length: 7 }, (_, index) => (
+                    <i
+                      key={index}
+                      className={
+                        index < Math.min(store.sessions, 7) ? "filled" : ""
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+          <div className="workspace-grid">
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">01 / Curriculum</p>
+                  <h2>Your courses</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  onClick={() => onEditCourse()}
+                  aria-label="Add a new course"
+                >
+                  +
+                </button>
+              </div>
+              {courseDraft && (
+                <form className="inline-form" onSubmit={onSubmitCourse}>
+                  <label>
+                    Course name
+                    <input
+                      autoFocus
+                      required
+                      value={courseDraft.name ?? ""}
+                      onChange={(event) =>
+                        setCourseDraft({
+                          ...courseDraft,
+                          name: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Code
+                    <input
+                      value={courseDraft.code ?? ""}
+                      onChange={(event) =>
+                        setCourseDraft({
+                          ...courseDraft,
+                          code: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Grade
+                    <input
+                      type="number"
+                      value={courseDraft.grade ?? ""}
+                      onChange={(event) =>
+                        setCourseDraft({
+                          ...courseDraft,
+                          grade: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <div className="form-actions">
+                    <button className="primary-button">Save course</button>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      onClick={() => setCourseDraft(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+              {store.courses.length ? (
+                <div className="course-list">
+                  {store.courses.map((course) => (
+                    <article className="course-item" key={course.id}>
+                      <div className="course-info">
+                        <strong>{course.name}</strong>
+                        <span>{course.code || "No course code"}</span>
+                      </div>
+                      <div className="item-actions">
+                        <button
+                          className="small-button"
+                          onClick={() => onEditCourse(course)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="small-button"
+                          onClick={() => onDeleteCourse(course.id)}
+                        >
+                          Delete
+                        </button>
+                        <span className="grade-badge">
+                          {course.grade ? `${course.grade}%` : "--"}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <span className="empty-number">01</span>
+                  <p>
+                    No courses yet.
+                    <br />
+                    <button
+                      className="link-button"
+                      onClick={() => onEditCourse()}
+                    >
+                      Add your first course
+                    </button>
+                  </p>
+                </div>
+              )}
+            </section>
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">02 / Work queue</p>
+                  <h2>Assignments</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  onClick={() =>
+                    store.courses.length ? onEditAssignment() : onEditCourse()
+                  }
+                  aria-label="Add a new assignment"
+                >
+                  +
+                </button>
+              </div>
+              <div className="assignment-tools">
+                <label className="search-wrap">
+                  <Search size={15} />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search assignments"
+                  />
+                </label>
+                <select
+                  value={filter}
+                  onChange={(event) =>
+                    setFilter(event.target.value as Status | "all")
+                  }
+                >
+                  <option value="all">All statuses</option>
+                  <option value="todo">To do</option>
+                  <option value="progress">In progress</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+              {assignmentDraft && (
+                <form
+                  className="inline-form assignment-form"
+                  onSubmit={onSubmitAssignment}
+                >
+                  <label>
+                    Assignment
+                    <input
+                      autoFocus
+                      required
+                      value={assignmentDraft.title ?? ""}
+                      onChange={(event) =>
+                        setAssignmentDraft({
+                          ...assignmentDraft,
+                          title: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Course
+                    <select
+                      value={assignmentDraft.courseId ?? ""}
+                      onChange={(event) =>
+                        setAssignmentDraft({
+                          ...assignmentDraft,
+                          courseId: event.target.value,
+                        })
+                      }
+                    >
+                      {store.courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Due date
+                    <input
+                      type="date"
+                      required
+                      value={assignmentDraft.due ?? ""}
+                      onChange={(event) =>
+                        setAssignmentDraft({
+                          ...assignmentDraft,
+                          due: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Priority
+                    <select
+                      value={assignmentDraft.priority ?? "medium"}
+                      onChange={(event) =>
+                        setAssignmentDraft({
+                          ...assignmentDraft,
+                          priority: event.target.value as Priority,
+                        })
+                      }
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </label>
+                  <div className="form-actions">
+                    <button className="primary-button">Save assignment</button>
+                    <button
+                      className="quiet-button"
+                      type="button"
+                      onClick={() => setAssignmentDraft(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+              {visible.length ? (
+                <div className="assignment-list">
+                  {visible.map((assignment) => (
+                    <article
+                      className={`assignment-item ${assignment.status === "done" ? "done" : ""}`}
+                      key={assignment.id}
+                    >
+                      <span className={`priority-dot ${assignment.priority}`} />
+                      <div className="assignment-main">
+                        <strong>{assignment.title}</strong>
+                        <span>
+                          {store.courses.find(
+                            (course) => course.id === assignment.courseId,
+                          )?.name ?? "Unassigned"}{" "}
+                          · Due{" "}
+                          {new Date(
+                            `${assignment.due}T12:00:00`,
+                          ).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <div className="assignment-meta">
+                        <select
+                          className="status-select"
+                          value={assignment.status}
+                          onChange={(event) =>
+                            onSave(
+                              {
+                                ...store,
+                                assignments: store.assignments.map((item) =>
+                                  item.id === assignment.id
+                                    ? {
+                                        ...item,
+                                        status: event.target.value as Status,
+                                      }
+                                    : item,
+                                ),
+                              },
+                              "Status updated",
+                            )
+                          }
+                        >
+                          <option value="todo">To do</option>
+                          <option value="progress">In progress</option>
+                          <option value="done">Done</option>
+                        </select>
+                        <button
+                          className="small-button"
+                          onClick={() => onEditAssignment(assignment)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="small-button"
+                          onClick={() => onDeleteAssignment(assignment.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <span className="empty-number">02</span>
+                  <p>
+                    No assignments match this view.
+                    <br />
+                    <button
+                      className="link-button"
+                      onClick={() =>
+                        store.courses.length
+                          ? onEditAssignment()
+                          : onEditCourse()
+                      }
+                    >
+                      Add an assignment
+                    </button>
+                  </p>
+                </div>
+              )}
+            </section>
+          </div>
+        </main>
+        <footer>
+          <span>STUDYBOARD / 2026</span>
+          <span>
+            {version === 1
+              ? "Basic planner workspace"
+              : "Enhanced planner workspace"}
+          </span>
+          <button
+            className="reset-button"
+            onClick={() => onSave(emptyStore, "Workspace reset")}
+          >
+            Reset workspace
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
 }
 
-function V4Planner({ store, onVersionChange, onSave }: { store: Store; onVersionChange: (version: 1 | 2 | 3 | 4) => void; onSave: (store: Store, message?: string) => void }) {
+let activeV5Store: Store | null = null;
+let activeV5Save: ((store: Store, message?: string) => void) | null = null;
+
+function V4Planner({
+  store,
+  onVersionChange,
+  onSave,
+  showV5 = false,
+}: {
+  store: Store;
+  onVersionChange: (version: 1 | 2 | 3 | 4 | 5) => void;
+  onSave: (store: Store, message?: string) => void;
+  showV5?: boolean;
+}) {
+  activeV5Store = showV5 ? store : null;
+  activeV5Save = showV5 ? onSave : null;
   const [priorityFilter, setPriorityFilter] = useState<Priority | "all">("all");
-  const [selectedCourse, setSelectedCourse] = useState(store.courses[0]?.id ?? "");
+  const [selectedCourse, setSelectedCourse] = useState(
+    store.courses[0]?.id ?? "",
+  );
   const [syllabusText, setSyllabusText] = useState("");
   const [newCourse, setNewCourse] = useState({ name: "", code: "" });
   const selectedSyllabus = store.syllabi?.[selectedCourse];
-  const assignments = store.assignments.filter((item) => priorityFilter === "all" || item.priority === priorityFilter);
-  const priorityCounts = { high: store.assignments.filter((item) => item.priority === "high").length, medium: store.assignments.filter((item) => item.priority === "medium").length, low: store.assignments.filter((item) => item.priority === "low").length };
-  const completed = store.assignments.filter((item) => item.status === "done").length;
+  const assignments = store.assignments.filter(
+    (item) => priorityFilter === "all" || item.priority === priorityFilter,
+  );
+  const priorityCounts = {
+    high: store.assignments.filter((item) => item.priority === "high").length,
+    medium: store.assignments.filter((item) => item.priority === "medium")
+      .length,
+    low: store.assignments.filter((item) => item.priority === "low").length,
+  };
+  const completed = store.assignments.filter(
+    (item) => item.status === "done",
+  ).length;
   const semesterStart = new Date("2026-08-17T12:00:00").getTime();
   const semesterEnd = new Date("2026-12-12T12:00:00").getTime();
-  const progressPoints = Array.from({ length: 9 }, (_, index) => { const date = semesterStart + (semesterEnd - semesterStart) * index / 8; const due = store.assignments.filter((item) => new Date(`${item.due}T12:00:00`).getTime() <= date); const complete = due.filter((item) => item.status === "done").length; return `${index * 12.5},${100 - (due.length ? complete / due.length * 78 : 8)}`; }).join(" ");
-  const updateSyllabus = (weights: Omit<SyllabusWeights, "source">, source: string) => onSave({ ...store, syllabi: { ...store.syllabi, [selectedCourse]: { ...weights, source } } }, "Syllabus weights saved");
-  const addCourse = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!newCourse.name.trim()) return; const course = { id: crypto.randomUUID(), name: newCourse.name.trim(), code: newCourse.code.trim(), grade: "" }; onSave({ ...store, courses: [...store.courses, course] }, "Class added"); setSelectedCourse(course.id); setNewCourse({ name: "", code: "" }); };
-  const parseSyllabus = (text: string, source: string) => { setSyllabusText(text); const find = (patterns: RegExp[]) => Number((patterns.map((pattern) => text.match(pattern)?.[1]).find(Boolean) ?? "0").replace("%", "")); updateSyllabus({ homework: find([/(?:homework|hw)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]), tests: find([/(?:tests?|quizzes?)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]), midterm: find([/(?:midterm|mid-term)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]), final: find([/(?:final|final exam)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]) }, source); };
-  const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) parseSyllabus(await file.text(), file.name); };
+  const progressPoints = Array.from({ length: 9 }, (_, index) => {
+    const date = semesterStart + ((semesterEnd - semesterStart) * index) / 8;
+    const due = store.assignments.filter(
+      (item) => new Date(`${item.due}T12:00:00`).getTime() <= date,
+    );
+    const complete = due.filter((item) => item.status === "done").length;
+    return `${index * 12.5},${100 - (due.length ? (complete / due.length) * 78 : 8)}`;
+  }).join(" ");
+  const updateSyllabus = (
+    weights: Omit<SyllabusWeights, "source">,
+    source: string,
+  ) =>
+    onSave(
+      {
+        ...store,
+        syllabi: { ...store.syllabi, [selectedCourse]: { ...weights, source } },
+      },
+      "Syllabus weights saved",
+    );
+  const addCourse = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newCourse.name.trim()) return;
+    const course = {
+      id: crypto.randomUUID(),
+      name: newCourse.name.trim(),
+      code: newCourse.code.trim(),
+      grade: "",
+    };
+    onSave({ ...store, courses: [...store.courses, course] }, "Class added");
+    setSelectedCourse(course.id);
+    setNewCourse({ name: "", code: "" });
+  };
+  const parseSyllabus = (text: string, source: string) => {
+    setSyllabusText(text);
+    const find = (patterns: RegExp[]) =>
+      Number(
+        (
+          patterns.map((pattern) => text.match(pattern)?.[1]).find(Boolean) ??
+          "0"
+        ).replace("%", ""),
+      );
+    updateSyllabus(
+      {
+        homework: find([/(?:homework|hw)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]),
+        tests: find([/(?:tests?|quizzes?)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]),
+        midterm: find([/(?:midterm|mid-term)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]),
+        final: find([/(?:final|final exam)[^\d]{0,15}(\d+(?:\.\d+)?)\s*%?/i]),
+      },
+      source,
+    );
+  };
+  const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) parseSyllabus(await file.text(), file.name);
+  };
   useEffect(() => {
     const handleAddClass = (event: Event) => {
-      const detail = (event as CustomEvent<{ name: string; code: string }>).detail;
+      const detail = (event as CustomEvent<{ name: string; code: string }>)
+        .detail;
       if (!detail.name.trim()) return;
-      onSave({ ...store, courses: [...store.courses, { id: crypto.randomUUID(), name: detail.name.trim(), code: detail.code.trim(), grade: "" }] }, "Class added");
+      onSave(
+        {
+          ...store,
+          courses: [
+            ...store.courses,
+            {
+              id: crypto.randomUUID(),
+              name: detail.name.trim(),
+              code: detail.code.trim(),
+              grade: "",
+            },
+          ],
+        },
+        "Class added",
+      );
     };
     const handleAddAssignment = (event: Event) => {
-      const detail = (event as CustomEvent<{ title: string; courseName: string; due: string; priority: Priority }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          title: string;
+          courseName: string;
+          due: string;
+          priority: Priority;
+        }>
+      ).detail;
+      const course =
+        store.courses.find((item) => item.name === detail.courseName) ??
+        store.courses[0];
+      if (!detail.title.trim() || !course) return;
+      onSave(
+        {
+          ...store,
+          assignments: [
+            ...store.assignments,
+            {
+              id: crypto.randomUUID(),
+              title: detail.title.trim(),
+              courseId: course.id,
+              due: detail.due,
+              priority: detail.priority,
+              status: "todo",
+            },
+          ],
+        },
+        "Assignment added",
+      );
+    };
+    const handleAddAssessment = (event: Event) => {
+      const detail = (event as CustomEvent<{ title: string; courseName: string; type: "test" | "project" }>).detail;
       const course = store.courses.find((item) => item.name === detail.courseName) ?? store.courses[0];
       if (!detail.title.trim() || !course) return;
-      onSave({ ...store, assignments: [...store.assignments, { id: crypto.randomUUID(), title: detail.title.trim(), courseId: course.id, due: detail.due, priority: detail.priority, status: "todo" }] }, "Assignment added");
+      onSave({ ...store, assessments: [...(store.assessments ?? []), { id: crypto.randomUUID(), title: detail.title.trim(), courseId: course.id, type: detail.type }] }, "Assessment added");
     };
     window.addEventListener("studyboard:add-class", handleAddClass);
     window.addEventListener("studyboard:add-assignment", handleAddAssignment);
-    return () => { window.removeEventListener("studyboard:add-class", handleAddClass); window.removeEventListener("studyboard:add-assignment", handleAddAssignment); };
+    window.addEventListener("studyboard:add-assessment", handleAddAssessment);
+    return () => {
+      window.removeEventListener("studyboard:add-class", handleAddClass);
+      window.removeEventListener(
+        "studyboard:add-assignment",
+        handleAddAssignment,
+      );
+      window.removeEventListener("studyboard:add-assessment", handleAddAssessment);
+    };
   }, [onSave, store]);
   const total = selectedSyllabus ? weightTotal(selectedSyllabus) : 0;
-  return <div className="app-v4"><AnimatedGradient config={{ preset: "Vortex", speed: 10, swirl: 25 }} noise={{ opacity: .1 }} /><header className="topbar-v4"><a className="brand-v4" href="/">studyboard<span>.</span></a><nav className="version-nav-v4" aria-label="Application version">{([1, 2, 3, 4] as const).map((item) => <button key={item} className={item === 4 ? "active" : ""} onClick={() => onVersionChange(item)}>0{item} / {item === 4 ? "Analytics" : item === 3 ? "Studio" : item === 2 ? "Enhanced" : "Basic"}</button>)}</nav><span className="v4-label">SEMESTER 01 / FALL 2026</span></header><main className="main-v4"><section className="intro-v4"><div><p>Version 4 / Analytics workspace</p><h1>See the work<br /><em>add up.</em></h1></div><div><strong>{completed}/{store.assignments.length}</strong><span>assignments completed</span><small>Charts, syllabus math, and a clearer path through finals.</small></div></section><section className="v4-summary"><Metric label="Courses" value={String(store.courses.length)} detail="active this term" /><Metric label="Open work" value={String(store.assignments.filter((item) => item.status !== "done").length)} detail="across your queue" /><Metric label="High priority" value={String(priorityCounts.high)} detail="needs attention" /><Metric label="Study sessions" value={String(store.sessions)} detail="logged this term" /></section><section className="v4-grid"><article className="v4-card progress-chart"><CardTitle eyebrow="01 / Semester progress" title="Completion curve" /><svg viewBox="0 0 100 100" role="img" aria-label="Semester assignment completion chart" preserveAspectRatio="none"><path className="chart-fill" d={`M 0,100 L ${progressPoints} L 100,100 Z`} /><polyline points={progressPoints} /></svg><div className="chart-axis"><span>Aug 17</span><span>Midterm</span><span>Dec 12</span></div></article><article className="v4-card priority-chart"><CardTitle eyebrow="02 / Priority signal" title="What needs attention" /><div className="priority-bars">{(["high", "medium", "low"] as Priority[]).map((priority) => <button key={priority} className={priorityFilter === priority ? "selected" : ""} onClick={() => setPriorityFilter(priorityFilter === priority ? "all" : priority)}><span className={`priority-label ${priority}`}>{priority}</span><i><b style={{ width: `${store.assignments.length ? priorityCounts[priority] / store.assignments.length * 100 : 0}%` }} /></i><strong>{priorityCounts[priority]}</strong></button>)}</div><button className="show-all" onClick={() => setPriorityFilter("all")}>{priorityFilter === "all" ? "Showing all assignments" : "Show all assignments"}</button></article></section><section className="v4-grid lower-v4"><article className="v4-card syllabus-card"><CardTitle eyebrow="03 / Grade math" title="Syllabus calculator" /><div className="syllabus-select"><label>Course<select value={selectedCourse} onChange={(event) => setSelectedCourse(event.target.value)}>{store.courses.map((course) => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}</select></label><label className="file-label">Read syllabus<input type="file" accept=".txt,.md,.csv,text/plain" onChange={handleFile} /></label></div><textarea value={syllabusText} onChange={(event) => setSyllabusText(event.target.value)} placeholder={'Paste syllabus text, for example:\nHomework 25%\nTests 25%\nMidterm 20%\nFinal 30%'} /><button className="parse-button" onClick={() => parseSyllabus(syllabusText, "Pasted syllabus")}>Calculate percentages</button>{selectedSyllabus ? <div className="weight-grid">{(["homework", "tests", "midterm", "final"] as const).map((key) => <label key={key}>{key}<input type="number" min="0" max="100" value={selectedSyllabus[key]} onChange={(event) => updateSyllabus({ ...selectedSyllabus, [key]: Number(event.target.value) }, selectedSyllabus.source)} /></label>)}<strong className={total === 100 ? "total-good" : "total-warn"}>Total: {total}%</strong></div> : <p className="syllabus-hint">Upload a text syllabus or paste its grading breakdown to calculate the class percentages.</p>}</article><article className="v4-card queue-card"><CardTitle eyebrow="04 / Filtered queue" title="Priority assignments" />{assignments.length ? assignments.map((assignment) => <div className="v4-assignment" key={assignment.id}><i className={`priority ${assignment.priority}`} /><div><strong>{assignment.title}</strong><span>{store.courses.find((course) => course.id === assignment.courseId)?.name} · {assignment.status}</span></div><b>{assignment.due}</b></div>) : <p className="syllabus-hint">No assignments at this priority.</p>}</article></section><section className="session-control"><div><small>STUDY SESSIONS</small><strong>{store.sessions}</strong><span>Keep the count honest.</span></div><div><button onClick={() => onSave({ ...store, sessions: Math.max(0, store.sessions - 1) }, "Study session removed")}>− Remove session</button><button onClick={() => onSave({ ...store, sessions: store.sessions + 1 }, "Study session logged")}>+ Log session</button></div></section></main><footer className="footer-v4">V4 / ANALYTICS · LOCAL DATA AUTOSAVED</footer></div>;
+  return (
+    <div className="app-v4">
+      <AnimatedGradient
+        config={{ preset: "Vortex", speed: 10, swirl: 25 }}
+        noise={{ opacity: 0.1 }}
+      />
+      <header className="topbar-v4">
+        <a className="brand-v4" href="/">
+          studyboard<span>.</span>
+        </a>
+        <nav className="version-nav-v4" aria-label="Application version">
+          {([1, 2, 3, 4, 5] as const).map((item) => (
+            <button
+              key={item}
+              className={(showV5 ? item === 5 : item === 4) ? "active" : ""}
+              onClick={() => onVersionChange(item)}
+            >
+              0{item} /{" "}
+              {item === 5
+                ? "Assessments"
+                : item === 4
+                  ? "Analytics"
+                : item === 3
+                  ? "Studio"
+                  : item === 2
+                    ? "Enhanced"
+                    : "Basic"}
+            </button>
+          ))}
+        </nav>
+        <span className="v4-label">SEMESTER 01 / FALL 2026</span>
+      </header>
+      <main className="main-v4">
+        <section className="intro-v4">
+          <div>
+            <p>Version {showV5 ? 5 : 4} / {showV5 ? "Assessment workspace" : "Analytics workspace"}</p>
+            <h1>
+              See the work
+              <br />
+              <em>add up.</em>
+            </h1>
+          </div>
+          <div>
+            <strong>
+              {completed}/{store.assignments.length}
+            </strong>
+            <span>assignments completed</span>
+            <small>
+              Charts, syllabus math, and a clearer path through finals.
+            </small>
+          </div>
+        </section>
+        <section className="v4-summary">
+          <Metric
+            label="Courses"
+            value={String(store.courses.length)}
+            detail="active this term"
+          />
+          <Metric
+            label="Open work"
+            value={String(
+              store.assignments.filter((item) => item.status !== "done").length,
+            )}
+            detail="across your queue"
+          />
+          <Metric
+            label="High priority"
+            value={String(priorityCounts.high)}
+            detail="needs attention"
+          />
+          <Metric
+            label="Study sessions"
+            value={String(store.sessions)}
+            detail="logged this term"
+          />
+        </section>
+        <section className="v4-grid">
+          {showV5 && <V5Manager store={store} onSave={onSave} />}
+          <article className="v4-card progress-chart">
+            <CardTitle
+              eyebrow="01 / Semester progress"
+              title="Completion curve"
+            />
+            <svg
+              viewBox="0 0 100 100"
+              role="img"
+              aria-label="Semester assignment completion chart"
+              preserveAspectRatio="none"
+            >
+              <path
+                className="chart-fill"
+                d={`M 0,100 L ${progressPoints} L 100,100 Z`}
+              />
+              <polyline points={progressPoints} />
+            </svg>
+            <div className="chart-axis">
+              <span>Aug 17</span>
+              <span>Midterm</span>
+              <span>Dec 12</span>
+            </div>
+          </article>
+          <article className="v4-card priority-chart">
+            <CardTitle
+              eyebrow="02 / Priority signal"
+              title="What needs attention"
+            />
+            <div className="priority-bars">
+              {(["high", "medium", "low"] as Priority[]).map((priority) => (
+                <button
+                  key={priority}
+                  className={priorityFilter === priority ? "selected" : ""}
+                  onClick={() =>
+                    setPriorityFilter(
+                      priorityFilter === priority ? "all" : priority,
+                    )
+                  }
+                >
+                  <span className={`priority-label ${priority}`}>
+                    {priority}
+                  </span>
+                  <i>
+                    <b
+                      style={{
+                        width: `${store.assignments.length ? (priorityCounts[priority] / store.assignments.length) * 100 : 0}%`,
+                      }}
+                    />
+                  </i>
+                  <strong>{priorityCounts[priority]}</strong>
+                </button>
+              ))}
+            </div>
+            <button
+              className="show-all"
+              onClick={() => setPriorityFilter("all")}
+            >
+              {priorityFilter === "all"
+                ? "Showing all assignments"
+                : "Show all assignments"}
+            </button>
+          </article>
+        </section>
+        <section className="v4-grid lower-v4">
+          <article className="v4-card syllabus-card">
+            <CardTitle eyebrow="03 / Grade math" title="Syllabus calculator" />
+            <div className="syllabus-select">
+              <label>
+                Course
+                <select
+                  value={selectedCourse}
+                  onChange={(event) => setSelectedCourse(event.target.value)}
+                >
+                  {store.courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.code} · {course.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="file-label">
+                Read syllabus
+                <input
+                  type="file"
+                  accept=".txt,.md,.csv,text/plain"
+                  onChange={handleFile}
+                />
+              </label>
+            </div>
+            <textarea
+              value={syllabusText}
+              onChange={(event) => setSyllabusText(event.target.value)}
+              placeholder={
+                "Paste syllabus text, for example:\nHomework 25%\nTests 25%\nMidterm 20%\nFinal 30%"
+              }
+            />
+            <button
+              className="parse-button"
+              onClick={() => parseSyllabus(syllabusText, "Pasted syllabus")}
+            >
+              Calculate percentages
+            </button>
+            {selectedSyllabus ? (
+              <div className="weight-grid">
+                {(["homework", "tests", "midterm", "final"] as const).map(
+                  (key) => (
+                    <label key={key}>
+                      {key}
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={selectedSyllabus[key]}
+                        onChange={(event) =>
+                          updateSyllabus(
+                            {
+                              ...selectedSyllabus,
+                              [key]: Number(event.target.value),
+                            },
+                            selectedSyllabus.source,
+                          )
+                        }
+                      />
+                    </label>
+                  ),
+                )}
+                <strong className={total === 100 ? "total-good" : "total-warn"}>
+                  Total: {total}%
+                </strong>
+              </div>
+            ) : (
+              <p className="syllabus-hint">
+                Upload a text syllabus or paste its grading breakdown to
+                calculate the class percentages.
+              </p>
+            )}
+          </article>
+          <article className="v4-card queue-card">
+            <CardTitle
+              eyebrow="04 / Filtered queue"
+              title="Priority assignments"
+            />
+            {assignments.length ? (
+              assignments.map((assignment) => (
+                <div className="v4-assignment" key={assignment.id}>
+                  <i className={`priority ${assignment.priority}`} />
+                  <div>
+                    <strong>{assignment.title}</strong>
+                    <span>
+                      {
+                        store.courses.find(
+                          (course) => course.id === assignment.courseId,
+                        )?.name
+                      }{" "}
+                      · {assignment.status}
+                    </span>
+                  </div>
+                  <b>{assignment.due}</b>
+                </div>
+              ))
+            ) : (
+              <p className="syllabus-hint">No assignments at this priority.</p>
+            )}
+          </article>
+        </section>
+        <section className="session-control">
+          <div>
+            <small>STUDY SESSIONS</small>
+            <strong>{store.sessions}</strong>
+            <span>Keep the count honest.</span>
+          </div>
+          <div>
+            <button
+              onClick={() =>
+                onSave(
+                  { ...store, sessions: Math.max(0, store.sessions - 1) },
+                  "Study session removed",
+                )
+              }
+            >
+              − Remove session
+            </button>
+            <button
+              onClick={() =>
+                onSave(
+                  { ...store, sessions: store.sessions + 1 },
+                  "Study session logged",
+                )
+              }
+            >
+              + Log session
+            </button>
+          </div>
+        </section>
+      </main>
+      <footer className="footer-v4">
+        V{showV5 ? 5 : 4} / {showV5 ? "ASSESSMENTS" : "ANALYTICS"} · LOCAL DATA AUTOSAVED
+      </footer>
+    </div>
+  );
 }
 
-function weightTotal(weights: SyllabusWeights) { return weights.homework + weights.tests + weights.midterm + weights.final; }
+function V5Manager({ store, onSave }: { store: Store; onSave: (store: Store, message?: string) => void }) {
+  const [courseId, setCourseId] = useState<string | null>(null);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
+  const [courseName, setCourseName] = useState("");
+  const [courseCode, setCourseCode] = useState("");
+  const [assignmentTitle, setAssignmentTitle] = useState("");
+  const editCourse = (course: Course) => { setCourseId(course.id); setCourseName(course.name); setCourseCode(course.code); };
+  const editAssignment = (assignment: Assignment) => { setAssignmentId(assignment.id); setAssignmentTitle(assignment.title); };
+  const saveCourse = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!courseName.trim()) return; onSave({ ...store, courses: store.courses.map((course) => course.id === courseId ? { ...course, name: courseName.trim(), code: courseCode.trim() } : course) }, "Class updated"); setCourseId(null); };
+  const saveAssignment = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!assignmentTitle.trim()) return; onSave({ ...store, assignments: store.assignments.map((assignment) => assignment.id === assignmentId ? { ...assignment, title: assignmentTitle.trim() } : assignment) }, "Assignment updated"); setAssignmentId(null); };
+  const removeCourse = (id: string) => onSave({ ...store, courses: store.courses.filter((course) => course.id !== id), assignments: store.assignments.filter((assignment) => assignment.courseId !== id) }, "Class deleted");
+  const removeAssignment = (id: string) => onSave({ ...store, assignments: store.assignments.filter((assignment) => assignment.id !== id) }, "Assignment deleted");
+  return <article className="v4-card v5-manager"><CardTitle eyebrow="00 / Workspace controls" title="Manage classes and work" /><div className="v5-manager-grid"><div><h3>Classes</h3>{store.courses.map((course) => course.id === courseId ? <form className="v5-edit-row" key={course.id} onSubmit={saveCourse}><input aria-label="Edit class name" value={courseName} onChange={(event) => setCourseName(event.target.value)} /><input aria-label="Edit class code" value={courseCode} onChange={(event) => setCourseCode(event.target.value)} /><button type="submit">Save</button><button type="button" onClick={() => setCourseId(null)}>Cancel</button></form> : <div className="v5-manager-row" key={course.id}><span><strong>{course.name}</strong><small>{course.code}</small></span><button onClick={() => editCourse(course)} aria-label={`Edit ${course.name}`}>Edit</button><button onClick={() => removeCourse(course.id)} aria-label={`Delete ${course.name}`}>Delete</button></div>)}</div><div><h3>Assignments</h3>{store.assignments.map((assignment) => assignment.id === assignmentId ? <form className="v5-edit-row" key={assignment.id} onSubmit={saveAssignment}><input aria-label="Edit assignment title" value={assignmentTitle} onChange={(event) => setAssignmentTitle(event.target.value)} /><button type="submit">Save</button><button type="button" onClick={() => setAssignmentId(null)}>Cancel</button></form> : <div className="v5-manager-row" key={assignment.id}><span><strong>{assignment.title}</strong><small>{store.courses.find((course) => course.id === assignment.courseId)?.name}</small></span><select aria-label={`Priority for ${assignment.title}`} value={assignment.priority} onChange={(event) => onSave({ ...store, assignments: store.assignments.map((item) => item.id === assignment.id ? { ...item, priority: event.target.value as Priority } : item) }, "Priority updated")}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select aria-label={`Status for ${assignment.title}`} value={assignment.status} onChange={(event) => onSave({ ...store, assignments: store.assignments.map((item) => item.id === assignment.id ? { ...item, status: event.target.value as Status } : item) }, "Status updated")}><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select><button onClick={() => editAssignment(assignment)} aria-label={`Edit ${assignment.title}`}>Edit</button><button onClick={() => removeAssignment(assignment.id)} aria-label={`Delete ${assignment.title}`}>Delete</button></div>)}</div></div></article>;
+}
 
-function CardTitle({ eyebrow, title }: { eyebrow: string; title: string }) { const [adding, setAdding] = useState(false); const [name, setName] = useState(""); const [code, setCode] = useState(""); const [courseName, setCourseName] = useState(""); const [due, setDue] = useState(new Date().toISOString().slice(0, 10)); const [priority, setPriority] = useState<Priority>("medium"); const isClass = eyebrow.startsWith("01"); const isAssignment = eyebrow.startsWith("04"); const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (isClass && name.trim()) window.dispatchEvent(new CustomEvent("studyboard:add-class", { detail: { name, code } })); if (isAssignment && name.trim()) window.dispatchEvent(new CustomEvent("studyboard:add-assignment", { detail: { title: name, courseName, due, priority } })); setName(""); setCode(""); setAdding(false); }; return <div className="v4-card-title"><div><p>{eyebrow}</p><h2>{title}</h2></div>{(isClass || isAssignment) && (adding ? <form className="v4-inline-class-form" onSubmit={submit}><input autoFocus aria-label={isClass ? "New class name" : "New assignment title"} placeholder={isClass ? "Class name" : "Assignment title"} value={name} onChange={(event) => setName(event.target.value)} />{isClass ? <><input aria-label="New class code" placeholder="Code" value={code} onChange={(event) => setCode(event.target.value)} /></> : <><input aria-label="Assignment course" placeholder="Course name" value={courseName} onChange={(event) => setCourseName(event.target.value)} /><input aria-label="Assignment due date" type="date" value={due} onChange={(event) => setDue(event.target.value)} /><select aria-label="Assignment priority" value={priority} onChange={(event) => setPriority(event.target.value as Priority)}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></>}<button type="submit">Add</button><button type="button" onClick={() => setAdding(false)}>Cancel</button></form> : <button className="v4-add-class-button" onClick={() => setAdding(true)}>{isClass ? "+ Add class" : "+ Add assignment"}</button>)}</div>; }
-function Metric({ label, value, detail }: { label: string; value: string; detail: string }) { return <article className="metric"><small>{label}</small><strong>{value}</strong><span>{detail}</span></article>; }
-function PanelHeader({ number, title, action }: { number: string; title: string; action: React.ReactNode }) { return <div className="panel-header"><div><p>{number} / {title === "Your courses" ? "Curriculum" : "Work queue"}</p><h2>{title}</h2></div>{action}</div>; }
-function EmptyState({ text, onClick }: { text: string; onClick: () => void }) { return <div className="empty-v3"><span>+</span><p>{text}<br /><button onClick={onClick}>Create one now</button></p></div>; }
-function AssignmentRow({ assignment, course, onEdit, onDelete, onStatus }: { assignment: Assignment; course: string; onEdit: () => void; onDelete: () => void; onStatus: (status: Status) => void }) { const overdue = assignment.status !== "done" && assignment.due < new Date().toISOString().slice(0, 10); return <article className={`assignment-row ${assignment.status === "done" ? "is-done" : ""}`}><i className={`priority ${assignment.priority}`} /><div><strong>{assignment.title}</strong><small>{course} · <span className={overdue ? "overdue" : ""}>{overdue ? "Overdue" : `Due ${new Date(`${assignment.due}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}</span></small></div><div className="assignment-actions"><select aria-label={`Status for ${assignment.title}`} value={assignment.status} onChange={(event) => onStatus(event.target.value as Status)}><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select><button onClick={onEdit} aria-label={`Edit ${assignment.title}`}><Pencil size={14} /></button><button onClick={onDelete} aria-label={`Delete ${assignment.title}`}><Trash2 size={14} /></button><ChevronDown size={14} /></div></article>; }
+function weightTotal(weights: SyllabusWeights) {
+  return weights.homework + weights.tests + weights.midterm + weights.final;
+}
+
+function CardTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [courseName, setCourseName] = useState("");
+  const [due, setDue] = useState(new Date().toISOString().slice(0, 10));
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [assessmentType, setAssessmentType] = useState<"test" | "project">("test");
+  const isClass = eyebrow.startsWith("01");
+  const isAssessment = eyebrow.startsWith("04") && activeV5Store !== null;
+  const isAssignment = eyebrow.startsWith("04") && !isAssessment;
+  const isV5Manager = eyebrow.startsWith("00") && activeV5Store !== null;
+  const selectedAssessmentCourse = activeV5Store?.courses.find((course) => course.name === courseName) ?? activeV5Store?.courses[0];
+  const assessmentWeight = selectedAssessmentCourse ? activeV5Store?.syllabi?.[selectedAssessmentCourse.id]?.[assessmentType === "test" ? "tests" : "homework"] ?? 0 : 0;
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isClass && name.trim())
+      window.dispatchEvent(
+        new CustomEvent("studyboard:add-class", { detail: { name, code } }),
+      );
+    if ((isAssignment || isV5Manager) && name.trim())
+      window.dispatchEvent(
+        new CustomEvent("studyboard:add-assignment", {
+          detail: { title: name, courseName, due, priority },
+        }),
+      );
+    if (isAssessment && name.trim())
+      window.dispatchEvent(new CustomEvent("studyboard:add-assessment", { detail: { title: name, courseName, type: assessmentType } }));
+    setName("");
+    setCode("");
+    setAdding(false);
+  };
+  return (
+    <div className="v4-card-title">
+      <div>
+        <p>{eyebrow}</p>
+        <h2>{title}</h2>
+      </div>
+      {(isClass || isAssignment || isAssessment || isV5Manager) &&
+        (adding ? (
+          <form className="v4-inline-class-form" onSubmit={submit}>
+            <input
+              autoFocus
+              aria-label={isClass ? "New class name" : "New assignment title"}
+              placeholder={isClass ? "Class name" : "Assignment title"}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+            {isClass ? (
+              <>
+                <input
+                  aria-label="New class code"
+                  placeholder="Code"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                />
+              </>
+            ) : isAssessment ? (
+              <>
+                <select aria-label="Assessment course" value={courseName || activeV5Store?.courses[0]?.name || ""} onChange={(event) => setCourseName(event.target.value)}>
+                  {activeV5Store?.courses.map((course) => <option key={course.id}>{course.name}</option>)}
+                </select>
+                <select aria-label="Assessment type" value={assessmentType} onChange={(event) => setAssessmentType(event.target.value as "test" | "project")}><option value="test">Test</option><option value="project">Project</option></select>
+                <span className="v5-weight-preview">{assessmentType === "test" ? "Tests" : "Projects / homework"}: {assessmentWeight}% of grade</span>
+              </>
+            ) : (
+              <>
+                <input
+                  aria-label="Assignment course"
+                  placeholder="Course name"
+                  value={courseName}
+                  onChange={(event) => setCourseName(event.target.value)}
+                />
+                <input
+                  aria-label="Assignment due date"
+                  type="date"
+                  value={due}
+                  onChange={(event) => setDue(event.target.value)}
+                />
+                <select
+                  aria-label="Assignment priority"
+                  value={priority}
+                  onChange={(event) =>
+                    setPriority(event.target.value as Priority)
+                  }
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </>
+            )}
+            <button type="submit">Add</button>
+            <button type="button" onClick={() => setAdding(false)}>
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <button
+            className="v4-add-class-button"
+            onClick={() => setAdding(true)}
+          >
+            {isClass ? "+ Add class" : isAssessment ? "+ Add test/project" : "+ Add assignment"}
+          </button>
+        ))}
+      {isAssessment && activeV5Store?.assessments?.map((assessment) => {
+        const course = activeV5Store?.courses.find((item) => item.id === assessment.courseId);
+        const weight = activeV5Store?.syllabi?.[assessment.courseId]?.[assessment.type === "test" ? "tests" : "homework"] ?? 0;
+        return <span className="v5-saved-assessment" key={assessment.id}>{assessment.title} · {course?.name} · {assessment.type} = {weight}%</span>;
+      })}
+    </div>
+  );
+}
+function Metric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <article className="metric">
+      <small>{label}</small>
+      <strong>{value}</strong>
+      <span>{detail}</span>
+    </article>
+  );
+}
+function PanelHeader({
+  number,
+  title,
+  action,
+}: {
+  number: string;
+  title: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <div className="panel-header">
+      <div>
+        <p>
+          {number} / {title === "Your courses" ? "Curriculum" : "Work queue"}
+        </p>
+        <h2>{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+function EmptyState({ text, onClick }: { text: string; onClick: () => void }) {
+  return (
+    <div className="empty-v3">
+      <span>+</span>
+      <p>
+        {text}
+        <br />
+        <button onClick={onClick}>Create one now</button>
+      </p>
+    </div>
+  );
+}
+function AssignmentRow({
+  assignment,
+  course,
+  onEdit,
+  onDelete,
+  onStatus,
+}: {
+  assignment: Assignment;
+  course: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStatus: (status: Status) => void;
+}) {
+  const overdue =
+    assignment.status !== "done" &&
+    assignment.due < new Date().toISOString().slice(0, 10);
+  return (
+    <article
+      className={`assignment-row ${assignment.status === "done" ? "is-done" : ""}`}
+    >
+      <i className={`priority ${assignment.priority}`} />
+      <div>
+        <strong>{assignment.title}</strong>
+        <small>
+          {course} ·{" "}
+          <span className={overdue ? "overdue" : ""}>
+            {overdue
+              ? "Overdue"
+              : `Due ${new Date(`${assignment.due}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
+          </span>
+        </small>
+      </div>
+      <div className="assignment-actions">
+        <select
+          aria-label={`Status for ${assignment.title}`}
+          value={assignment.status}
+          onChange={(event) => onStatus(event.target.value as Status)}
+        >
+          <option value="todo">To do</option>
+          <option value="progress">In progress</option>
+          <option value="done">Done</option>
+        </select>
+        <button onClick={onEdit} aria-label={`Edit ${assignment.title}`}>
+          <Pencil size={14} />
+        </button>
+        <button onClick={onDelete} aria-label={`Delete ${assignment.title}`}>
+          <Trash2 size={14} />
+        </button>
+        <ChevronDown size={14} />
+      </div>
+    </article>
+  );
+}
 
 export default App;
