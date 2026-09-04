@@ -1,15 +1,21 @@
 # Student Study Planner & Grade Dashboard
 
-A static web application built with HTML, CSS, and JavaScript for the Vibe Coding project.
+A React, TypeScript, Tailwind CSS, and shadcn-compatible web application for the Vibe Coding project.
 
 ## Versions
 
-- **Version 1 / Basic:** Add, edit, and delete courses and assignments; change assignment priority and status; refresh-safe `localStorage` persistence; course grades and completion summary.
-- **Version 2 / Enhanced:** Everything in Version 1 plus dashboard metrics, assignment search and status filtering, overdue highlighting, next-focus guidance, and study-session tracking.
+- **Version 1 / Basic:** The original light planner UI with add, edit, and delete courses and assignments; priority and status changes; refresh-safe `localStorage` persistence; course grades and completion summary.
+- **Version 2 / Enhanced:** The original Version 1 UI plus dashboard metrics, assignment search and status filtering, overdue highlighting, next-focus guidance, and study-session tracking.
+- **Version 3 / Studio:** A React and TypeScript rebuild using `src/components/ui`, the supplied animated gradient, liquid-glass buttons, metal buttons, Lucide icons, Tailwind CSS, and shadcn conventions. It retains the Version 1/2 data model and adds a glass workspace presentation.
 
 ## Run locally
 
-Open `index.html` in a browser, or serve the folder with any static web server. No build step or dependencies are required.
+```bash
+npm install
+npm run dev
+```
+
+The default component path is `src/components/ui`, as configured in `components.json`. Keeping reusable shadcn components there makes imports predictable and allows future shadcn CLI additions to work without moving files. Shared class utilities live in `src/lib/utils.ts`.
 
 ## Version 1 test checklist
 
@@ -21,4 +27,10 @@ Open `index.html` in a browser, or serve the folder with any static web server. 
 
 ## GitHub Pages
 
-Push the repository to GitHub, then choose **Settings > Pages > Deploy from a branch**, select the default branch and `/ (root)`, and save. GitHub Pages will serve `index.html` directly.
+Build the app and publish the generated `dist` folder with GitHub Pages:
+
+```bash
+npm run build
+```
+
+Configure GitHub Pages to deploy the `dist` artifact from your chosen branch or GitHub Actions workflow. Vite is configured with a relative base path so the built app works from a repository subpath.
